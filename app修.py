@@ -188,16 +188,23 @@ if page == "綜合預測分析 (迴歸 + LSTM)":
                     
                     lr_pred, trend_line = run_linear_regression(df, target_col)
                     
-                    col_lr_1, col_lr_2 = st.columns(2)
-                    col_lr_1.metric("長期趨勢預測值", f"{int(lr_pred):,}")
+                    # 計算區間
+                    lr_low = lr_pred * 0.98
+                    lr_high = lr_pred * 1.02
+
+                    # 【修改重點】直接顯示一個區間字串
+                    st.metric("長期趨勢預測區間 (±2%)", f"{int(lr_low):,} ~ {int(lr_high):,}")
                     
                     # 畫圖 1
                     fig1, ax1 = plt.subplots(figsize=(10, 4))
                     ax1.plot(x_axis, df[target_col], label='歷史數據', color='#1f77b4', linewidth=1)
                     ax1.plot(x_axis, trend_line, label='趨勢線', color='orange', linestyle='--', linewidth=1.5)
                     
-                    # 【修改點的大小】s=80
-                    ax1.scatter([ax_x], [lr_pred], color='orange', s=40, marker='s', label='趨勢預測點')
+                    ax1.scatter([ax_x], [lr_pred], color='orange', s=80, marker='s', label='趨勢預測點')
+                    
+                    # 畫出區間線
+                    ax1.vlines(x=ax_x, ymin=lr_low, ymax=lr_high, color='orange', linestyle=':', linewidth=2, label='趨勢區間')
+                    ax1.hlines(y=[lr_low, lr_high], xmin=ax_x, xmax=ax_x, color='orange', linewidth=4)
                     
                     ax1.set_title(f"{target_col} - 長期趨勢分析")
                     ax1.legend()
@@ -218,6 +225,7 @@ if page == "綜合預測分析 (迴歸 + LSTM)":
                         )
 
                     if lstm_pred is not None:
+                        # 這裡也可以改成顯示區間，或者保留 3 欄
                         col_lstm_1, col_lstm_2, col_lstm_3 = st.columns(3)
                         col_lstm_1.metric("AI 精確預測值", f"{int(lstm_pred):,}")
                         col_lstm_2.metric("預測下限 (-2%)", f"{int(low):,}")
@@ -227,8 +235,7 @@ if page == "綜合預測分析 (迴歸 + LSTM)":
                         fig2, ax2 = plt.subplots(figsize=(10, 4))
                         ax2.plot(x_axis, df[target_col], label='歷史數據', color='#1f77b4', linewidth=1, marker='o', markersize=3)
                         
-                        # 【修改點的大小】s=100
-                        ax2.scatter([ax_x], [lstm_pred], color='red', s=25, label='AI 預測點', zorder=5)
+                        ax2.scatter([ax_x], [lstm_pred], color='red', s=100, label='AI 預測點', zorder=5)
                         
                         ax2.vlines(x=ax_x, ymin=low, ymax=high, color='red', linestyle=':', linewidth=2, label='信心區間')
                         ax2.hlines(y=[low, high], xmin=ax_x, xmax=ax_x, color='red', linewidth=4)
@@ -244,8 +251,8 @@ if page == "綜合預測分析 (迴歸 + LSTM)":
                         trend_text = "高於" if diff > 0 else "低於"
                         
                         st.info(f"""
-                        * **長期來看**：根據回歸分析，市場趨勢預測值為 **{int(lr_pred):,}**。
-                        * **短期來看**：考慮近期波動後，AI 認為下一期數值會落在 **{int(lstm_pred):,}** (±2%)。
+                        * **長期來看**：根據回歸分析，市場趨勢預測範圍約在 **{int(lr_low):,} ~ {int(lr_high):,}**。
+                        * **短期來看**：考慮近期波動後，AI 認為下一期數值會落在 **{int(low):,} ~ {int(high):,}**。
                         * **結論**：AI 的預測結果 **{trend_text}** 長期趨勢線，建議決策者多加留意近期的市場變化因子。
                         """)
 
